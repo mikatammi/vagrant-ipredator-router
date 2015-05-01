@@ -1,0 +1,22 @@
+#!/bin/bash
+
+/etc/openvpn/update-resolv-conf
+
+WAN="tun0"
+LAN="eth1"
+
+# Clear old tables
+/sbin/iptables -F
+/sbin/iptables -t nat -F
+/sbin/iptables -t mangle -F
+
+# Nat
+/sbin/iptables -t nat -A POSTROUTING -o $WAN -j MASQUERADE
+/sbin/iptables -A FORWARD -i $WAN -o $LAN -m state --state RELATED,ESTABLISHED -j ACCEPT
+/sbin/iptables -A FORWARD -i $LAN -o $WAN -j ACCEPT
+
+# Port forwards
+iptables -A PREROUTING -t nat -i $WAN -p tcp --dport 17000 -j DNAT --to 192.168.1.20:17000
+iptables -A PREROUTING -t nat -i $WAN -p udp --dport 17000 -j DNAT --to 192.168.1.20:17000
+iptables -A PREROUTING -t nat -i $WAN -p tcp --dport 17001 -j DNAT --to 192.168.1.20:17001
+iptables -A PREROUTING -t nat -i $WAN -p udp --dport 17001 -j DNAT --to 192.168.1.20:17001
